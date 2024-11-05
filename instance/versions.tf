@@ -6,7 +6,7 @@ terraform {
     }
     null = {
       source  = "hashicorp/null"
-      version = "~> 2.1"
+      version = "~> 3.2"
     }
     template = {
       source  = "hashicorp/template"
@@ -14,7 +14,7 @@ terraform {
     }
     tls = {
       source  = "hashicorp/tls"
-      version = "~> 2.1"
+      version = "~> 4.0"
     }
   }
   required_version = ">= 0.13"
