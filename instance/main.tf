@@ -27,14 +27,6 @@ data "aws_ami" "ubuntu" {
   owners = ["099720109477"] # Canonical
 }
 
-data "template_file" "cloud_config" {
-  template = file("./cloud-config.yml")
-  vars = {
-    aws_region       = var.region
-    factorio_version = var.factorio_version
-  }
-}
-
 resource "tls_private_key" "ssh" {
   algorithm = "RSA"
 }
@@ -86,8 +78,11 @@ resource "aws_instance" "factorio" {
 
   iam_instance_profile = var.instance_profile
 
-  key_name        = aws_key_pair.key.key_name
-  user_data       = data.template_file.cloud_config.rendered
+  key_name = aws_key_pair.key.key_name
+  user_data = templatefile("./cloud-config.yml", {
+    aws_region       = var.region
+    factorio_version = var.factorio_version
+  })
   security_groups = [aws_security_group.instance.name]
 
   provisioner "file" {
