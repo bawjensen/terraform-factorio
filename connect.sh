@@ -1,7 +1,7 @@
 #!/bin/bash
 # Connect to the Factorio server via SSH.
 set -e
-SERVER_IP=$(cd instance/ && terraform output ip)
+SERVER_IP=$(cd instance/ && terraform output ip | xargs)
 SSH_PRIVATE_KEY=$(cd instance/ && terraform output ssh_private_key)
 SSH_PRIVATE_KEY_FILE=./id_factorio
 
