@@ -7,4 +7,4 @@ factorio_version = "latest"
 #instance_type = "c5.large"
 
 # S3 bucket for save games. Use bucket name from state module.
-bucket_name = "factorio-123"
+bucket_name = "factorio-20241105031941908700000001"
