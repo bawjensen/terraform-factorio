@@ -6,7 +6,7 @@ variable "name" {
 
 variable "region" {
   type        = string
-  default     = "eu-central-1"
+  default     = "us-west-1"
   description = "AWS region to create resources in."
 }
 
