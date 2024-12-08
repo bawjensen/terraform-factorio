@@ -4,11 +4,11 @@ After=cloud-final.service
 
 [Service]
 EnvironmentFile=/etc/factorio/factorio-environment
-ExecStart=/usr/bin/aws s3 sync . s3://${S3_BUCKET}/saves
+ExecStart=/usr/bin/env aws s3 sync . s3://${S3_BUCKET}/saves
 WorkingDirectory=/opt/factorio/saves
 Restart=no
 Type=oneshot
-User=factorio
+User=root
 ProtectHome=yes
 ReadOnlyPaths=/opt/factorio/saves
 PrivateTmp=true

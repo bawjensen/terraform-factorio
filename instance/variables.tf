@@ -36,7 +36,7 @@ variable "instance_profile" {
 
 variable "factorio_version" {
   type        = string
-  default     = "latest"
+  default     = "stable"
   description = "Version of Factorio to install on the server."
 }
 
@@ -44,4 +44,10 @@ variable "factorio_save_game" {
   type        = string
   default     = ""
   description = "Name of the Factorio save game to load. Leave empty to load latest save game."
+}
+
+variable "server_password" {
+  type        = string
+  default     = "<TBD>"
+  description = "Password for the server"
 }

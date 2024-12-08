@@ -1,7 +1,7 @@
 # Factorio server version
-factorio_version = "latest"
+#factorio_version = "latest"
 # Factorio save game
-#factorio_save_game = "Zocken"
+factorio_save_game = "yelling-v2"
 
 # Factorio server instance: NVMe instance
 #instance_type = "c5.large"

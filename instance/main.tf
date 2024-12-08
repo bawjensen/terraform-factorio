@@ -6,9 +6,10 @@ locals {
   save_game_dir = "/opt/factorio/saves"
   # To load named save game: --start-server ${path}/${name}.zip
   # To load latest save game: --start-server-load-latest
+
   save_game_arg = (var.factorio_save_game != "" ?
-    "--start-server ${local.save_game_dir}/${var.factorio_save_game}.zip'" :
-  "--start-server-load-latest")
+    "-e LOAD_LATEST_SAVE=false -e SAVE_NAME='${local.save_game_dir}/${var.factorio_save_game}.zip'" :
+  "")
 }
 
 data "aws_ami" "ubuntu" {
@@ -16,7 +17,7 @@ data "aws_ami" "ubuntu" {
 
   filter {
     name   = "name"
-    values = ["ubuntu/images/hvm-ssd/ubuntu-*-22.04-amd64-server-*"]
+    values = ["ubuntu/images/hvm-ssd-gp3/ubuntu-*-24.04-amd64-server-*"]
   }
 
   filter {
@@ -79,8 +80,9 @@ resource "aws_instance" "factorio" {
   iam_instance_profile = var.instance_profile
 
   key_name = aws_key_pair.key.key_name
-  user_data = templatefile("./cloud-config.yml", {
-    aws_region       = var.region
+  # Does setup like installing docker, restoring saved games from S3, and starting server
+  user_data = templatefile("./instance-setup.sh", {
+    save_game_arg    = local.save_game_arg
     factorio_version = var.factorio_version
   })
   security_groups = [aws_security_group.instance.name]
@@ -91,24 +93,20 @@ resource "aws_instance" "factorio" {
   }
 
   provisioner "file" {
-    content     = <<ENV
-S3_BUCKET=${var.bucket_name}
-SAVE_GAME_ARG=${local.save_game_arg}
-ENV
-    destination = "/tmp/factorio-environment"
+    content = templatefile("./conf/server-settings.json", {
+      server_password = var.server_password
+    })
+    destination = "/tmp/conf/server-settings.json"
   }
 
-  # Initialise Factorio server settings, install systemd units.
-  provisioner "remote-exec" {
-    inline = [
-      "sudo install -m 644 -o root -g root /tmp/factorio-environment -D -t /etc/factorio",
-      "sudo install -m 644 -o root -g root /tmp/conf/server-settings.json /etc/factorio",
-      "sudo install -m 644 -o root -g root /tmp/conf/server-adminlist.json /etc/factorio",
-      "sudo install -m 644 -o root -g root /tmp/conf/factorio-headless.service /etc/systemd/system",
-      "sudo install -m 644 -o root -g root /tmp/conf/factorio-backup.service /etc/systemd/system",
-      "sudo install -m 644 -o root -g root /tmp/conf/factorio-restore.service /etc/systemd/system",
-      "sudo systemctl daemon-reload",
-    ]
+  provisioner "file" {
+    source      = "./factorio-back-up-saves.sh"
+    destination = "/tmp/factorio-back-up-saves.sh"
+  }
+
+  provisioner "file" {
+    source      = "./factorio-restore-saves.sh"
+    destination = "/tmp/factorio-restore-saves.sh"
   }
 
   connection {
@@ -126,21 +124,12 @@ resource "null_resource" "provision" {
     private_key = tls_private_key.ssh.private_key_pem
   }
 
-  # Restore save games from S3 and start headless server.
-  provisioner "remote-exec" {
-    inline = [
-      "set -e",
-      "sudo cloud-init status --wait > /dev/null 2>&1",
-      "sudo systemctl start factorio-restore.service && sudo systemctl start factorio-headless.service",
-    ]
-  }
-
   # Stop headless server and backup save games to S3 on destroy.
   provisioner "remote-exec" {
     when = destroy
     inline = [
-      "sudo systemctl stop factorio-headless.service",
-      "sudo systemctl start factorio-backup.service",
+      "sudo docker stop factorio",
+      "sudo factorio-back-up-saves.sh",
     ]
   }
 
